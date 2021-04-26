@@ -47,11 +47,12 @@ DO_NEXT	LD	R1, END
 	NOT	R1, R1
 	ADD	R1 ,R1, #1	;NEGATE END OF STRING
 	ST	R1, END
-	LEA	R0, OPTION
-	OPTION		.STRINGZ "\nPRESS 1 TO SORT IN ASCENDING ORDER. PRESS 2 TO SORT IN DESCENDING ORDER."
+	JSR	RM_REDUN
+OPT	LEA	R0, OPTION
+	OPTION		.STRINGZ "\nPLEASE CHOOSE A SORTING ORDER:\n1 - ASCENDING ORDER\n2 - DESCENDING ORDER"
 	PUTS
-	LEA	R0, OPTION_1
-	OPTION_1	.STRINGZ "\nCHOOSE AN OPTION (1 - 2): "
+	LEA	R0, OPTION_INPUT
+	OPTION_INPUT	.STRINGZ "\nYOUR OPTION? "
 	PUTS
 	GETC
 	OUT
@@ -62,12 +63,12 @@ DO_NEXT	LD	R1, END
 	LD	R2, two
 	ADD	R2, R0, R2
 	BRz	SORT_2		;IF USER TYPE 2, SORT IN DESCENDING ORDER
+	BRnp	OPT
 SORT_1	JSR	ASC_SORT
 	BR	#1
 SORT_2	JSR	DSC_SORT
-	JSR	RM_REDUN
 	LEA	R0, RESULT
-	RESULT		.STRINGZ "\nSorted string: "
+	RESULT		.STRINGZ "\nSORTED STRING: "
 	PUTS
 	LD	R0, START
 	PUTS
@@ -81,18 +82,38 @@ CLR_STRING
 	LD	R2, END
 	ADD	R0, R1, R2
 	BRnz	CLR_STRING
-	BR	INPUT
+
+CONT	LEA	R0, CONTINUE
+	CONTINUE	.STRINGZ "\nCONTINUE? (Y/N)"
+	PUTS
+	GETC
+	OUT
+	LD	R2, Y
+	ADD	R2, R0, R2
+	BRZ	INPUT
+	LD	R2, y
+	ADD	R2, R0, R2
+	BRZ	INPUT
+	LD	R2, N
+	ADD	R2, R0, R2
+	BRZ	EXIT
+	LD	R2, n
+	ADD	R2, R0, R2
+	BRNP	CONT
 EXIT	LEA	R0, EXIT_PROMPT
 	EXIT_PROMPT	.STRINGZ "\nEXITING THE APPLICATION..."
 	PUTS
 	HALT
-
+ESC	.FILL	X-1B
+ENTER	.FILL	X-A
+Y	.FILL	X-59
+y	.FILL	X-79
+N	.FILL	X-4E
+n	.FILL	X-6E
 one	.FILL	x-31
 two	.FILL	x-32
 START	.FILL	X6000
 END	.FILL	x0000
-ENTER	.FILL	X-A
-ESC	.FILL	X-1B
 CHOICE	.BLKW	1
 	
 ASC_SORT
@@ -142,41 +163,56 @@ EXIT_DSC_SORT
 
 RM_REDUN
 	ST	R7, SAVER7
-	LD	R1, CHOICE
-	LD	R2, one
-	ADD	R2, R1, R2
-	BRz	asc_rm
-asc_rm	LD	R0, START
-load	LDR	R1, R0, #0
+	LD	R0, START
+load_0	LDR	R1, R0, #0
 	LD	R2, zero
 	ADD	R2, R1, R2
 	BRn	crossout	;if a redundant, remove
 	LD	R2, nine
 	ADD	R2, R1, R2
-	BRnz	load_next		;if in range 0 - 9, load next index
+	BRnz	load_next	;if in range 0 - 9, load next index
 	LD	R2, A	
 	ADD	R2, R1, R2	
-	BRp	load_next
+	BRn	crossout
+	LD	R2, Z	
+	ADD	R2, R1, R2	
+	BRnz	load_next
+	LD	R2, a
+	ADD	R2, R1, R2
+	BRn	crossout	;if Z < R1 < a, remove
+	LD	R2, z
+	ADD	R2, R1, R2
+	BRnz	load_next	;if a < R1 < z, load next index
 crossout
 	AND	R1, R1, #0
+shift	LDR	R1, R0, #1
 	STR	R1, R0, #0
 	ADD	R0, R0, #1
-	ST	R0, START
-	BR	#1
+	LD	R2, END
+	ADD	R2, R0, R2
+	BRnz	shift
+	ADD	R0, R0, #-2
+	NOT	R0, R0
+	ADD	R0, R0, #1
+	ST	R0, END
+	LD	R0, START
 load_next
 	ADD	R0, R0, #1
 	LD	R2, END
 	ADD	R2, R0, R2
-	BRnz	load
-	LD	R7, SAVER7
-done_rm	RET
+	BRnz	load_0
+done_rm	LD	R7, SAVER7
+	RET
 
 Comp	NOT	R2, R2
 	ADD	R2, R2, #1
 	RET
 
-A	.fill	x-41
-nine	.fill	x-39
-zero	.fill	x-30
+A	.FILL	x-41
+Z	.FILL	X-5A
+a	.FILL	X-61
+z	.FILL	X-7A
+nine	.FILL	x-39
+zero	.FILL	x-30
 SAVER7	.BLKW	1
 	.END
