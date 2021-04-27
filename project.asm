@@ -16,7 +16,7 @@
 	LEA	R0, WELCOME_MES0
 	PUTS
 	LEA	R0, WELCOME_MES1
-	WELCOME_MES1	.STRINGZ "\nPRESS ENTER TO PROCEED."
+	WELCOME_MES1	.STRINGZ "\nPRESS ENTER TO PROCEED."2
 	PUTS
 	WELCOME_MES2	.STRINGZ "\nPRESS ESC AT ANY POINT TO EXIT THE PROGRAM."
 	LEA	R0, WELCOME_MES2
@@ -41,7 +41,7 @@ LOOP	GETC
 	BRz	DO_NEXT		;IF PRESS ENTER, PROCEED TO SORT
 	LD	R2, ESC
 	ADD	R2, R0, R2
-	BRz	EXIT		;IF PRESS ESC, EXIT 	PROGRAM.
+	BRz	EXIT		;IF PRESS ESC, EXIT PROGRAM
 	OUT
 	STR	R0, R1, #0
 	ADD	R1, R1, #1
@@ -79,6 +79,7 @@ SORT_1	OUT
 	BR	#2
 SORT_2	OUT
 	JSR	DSC_SORT
+
 ;print sorted string
 	JSR	PRINT_SORTED
 
@@ -133,22 +134,51 @@ CLR_REGS
 	AND	R5, R5, #0
 	AND	R6, R6, #0
 	RET
-	
+
+SAVER1	.BLKW	1
+SAVER2	.BLKW	1
+Lower	.fill	x20
 ;ascending sort subroutine
 ASC_SORT
 	ST	R7, SAVER7
 BEGIN	LD	R0, START	;load address inside START into R0
 LOOPS	LDR	R1, R0, #0	;load first element of string into R1
+	LD	R1, SAVER1
+;check 1st number if uppercase
+	LD	R3, A
+	ADD	R3, R0, R3
+	BRzp	next_1
+next_1	LD	R3, Z
+	ADD	R3, R1, R3
+	BRp	load_2nd		;if R1 is an uppercase, convert it to lowercase then compare
+	ST	R1, SAVER1
+	LD	R3, Lower
+	ADD	R1, R1, R3
+;load 2nd character
+load_2nd
 	ADD	R0, R0, #1
 	LD	R4, END
 	ADD	R6, R4, R0	;check for end of string
 	BRp	EXIT_ASC_SORT
 	LDR	R2, R0, #0	;load second
-	JSR	COMP		;negate R2
+	LD	R2, SAVER2
+;check 2nd number if uppercase
+	LD	R3, A
+	ADD	R3, R2, R3
+	BRzp	next_2
+next_2	LD	R3, Z
+	ADD	R3, R2, R3
+	BRp	go_on		;if R2 is an uppercase, convert it to lowercase then compare
+	ST	R2, SAVER1
+	LD	R3, Lower
+	ADD	R2, R2, R3
+
+go_on	JSR	COMP		;negate R2
 	ADD	R3, R1, R2
 	BRnz	LOOPS		;if R1 < R2, load second element into R1 and so on
+	LD	R1, SAVER1
 	STR	R1, R0, #0	;store larger element into location M[R0] 
-	JSR	COMP		;re-negate R2
+	LD	R2, SAVER2
 	STR	R2, R0, #-1	;store smaller element back into location M[R0] - 1
 	LD	R4, END
 	ADD	R6, R4, R0	;check for end of string
@@ -215,12 +245,13 @@ load_next
 	LD	R2, END
 	ADD	R2, R0, R2
 	BRnz	load_0
-shiftl	LD	R0, START
+shift_init
+	LD	R0, START
 	AND	R3, R3, #0	;null counter
 	LD	R2, END
 	ADD	R2, R0, R2
 	BRz	done_rm		;if START = END (string contains only redundant characters), return
-;shift left
+;shift the remaining characters to the left
 shift	LDR	R1, R0, #0
 	BRnp	#5
 	LDR	R1, R0, #1
@@ -238,7 +269,7 @@ shift	LDR	R1, R0, #0
 	NOT	R0, R0
 	ADD	R0, R0, #1	
 	ST	R0, END
-	BR	shiftl
+	BR	shift_init
 done_rm	LD	R7, SAVER7
 	RET	
 
