@@ -29,9 +29,9 @@ REQUEST	GETC
 	ADD	R2, R0, R2	
 	BRz	EXIT		;IF PRESS ESC, EXIT
 	BRnp	REQUEST	
-INPUT	OUT
-	LEA	R0, INPUT_STRING
-	INPUT_STRING	.STRINGZ "\nPLEASE ENTER A STRING: "
+INPUTP	OUT
+INPUT	LEA	R0, INPUT_STRING
+	INPUT_STRING	.STRINGZ "\n\nPLEASE ENTER A STRING: "
 	PUTS
 	AND	R0, R0, #0
 	LD	R1, START
@@ -41,7 +41,7 @@ LOOP	GETC
 	BRz	DO_NEXT		;IF PRESS ENTER, PROCEED TO SORT
 	LD	R2, ESC
 	ADD	R2, R0, R2
-	BRz	EXIT		;IF PRESS ESC, EXIT THE PROGRAM.
+	BRz	EXIT		;IF PRESS ESC, EXIT 	PROGRAM.
 	OUT
 	STR	R0, R1, #0
 	ADD	R1, R1, #1
@@ -95,7 +95,7 @@ CONT	GETC
 	BRZ	INPUT
 	LD	R2, y
 	ADD	R2, R0, R2
-	BRZ	INPUT
+	BRZ	INPUTP
 	LD	R2, N
 	ADD	R2, R0, R2
 	BRz	EXITP
@@ -123,6 +123,7 @@ two	.FILL	x-32
 START	.FILL	X6000
 END	.FILL	x0000
 
+;clear all register EXCEPT R7
 CLR_REGS
 	AND	R0, R0, #0
 	AND	R1, R1, #0
@@ -179,6 +180,7 @@ EXIT_DSC_SORT
 	LD	R7, SAVER7
 	RET
 
+;remove redundant characters
 RM_REDUN
 	ST	R7, SAVER7
 	LD	R0, START
@@ -203,24 +205,42 @@ load_0	LDR	R1, R0, #0
 	BRnz	load_next	;if a < R1 < z, load next index
 crossout
 	AND	R1, R1, #0
-shift	LDR	R1, R0, #1
-	STR	R1, R0, #0
-	ADD	R0, R0, #1
-	LD	R2, END
-	ADD	R2, R0, R2
-	BRnz	shift
-	ADD	R0, R0, #-2	;subtract address by 2 to create a new string end
-	NOT	R0, R0
-	ADD	R0, R0, #1
-	ST	R0, END
-	LD	R0, START
-load_next
+STR	R1, R0, #0
 	ADD	R0, R0, #1
 	LD	R2, END
 	ADD	R2, R0, R2
 	BRnz	load_0
+load_next 
+	ADD	R0, R0, #1
+	LD	R2, END
+	ADD	R2, R0, R2
+	BRnz	load_0
+shiftl	LD	R0, START
+	AND	R3, R3, #0	;null counter
+	LD	R2, END
+	ADD	R2, R0, R2
+	BRz	done_rm		;if START = END (string contains only redundant characters), return
+;shift left
+shift	LDR	R1, R0, #0
+	BRnp	#5
+	LDR	R1, R0, #1
+	STR	R1, R0, #0
+	ADD	R3, R3, #1
+	AND	R1, R1, #0
+	STR	R1, R0, #1	;remove index
+	ADD	R0, R0, #1
+	LD	R2, END
+	ADD	R2, R0, R2
+	BRnz	shift
+	ADD	R3, R3, #0
+	BRz	done_rm
+	ADD	R0, R0, #-2
+	NOT	R0, R0
+	ADD	R0, R0, #1	
+	ST	R0, END
+	BR	shiftl
 done_rm	LD	R7, SAVER7
-	RET
+	RET	
 
 ;print sorted string
 PRINT_SORTED
