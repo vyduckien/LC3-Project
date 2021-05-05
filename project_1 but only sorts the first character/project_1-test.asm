@@ -88,6 +88,7 @@ begin	LD	R0, START_SORT	;LOAD THE ADDRESS OF THE FIRST CHARACTER IN THE FIRST ST
 	LDR	R1, R0, #0	;LOAD THE FIRST CHARACTER IN THE FIRST STRING
 	LD	R0, START_END
 	LDR	R2, R0, #0
+	BRz	incre_start
 	JSR	COMP		;NEGATE R2 FOR COMPARISON
 	ADD	R3, R1, R2
 	BRnz	do_this		;IF ALREADY SORTED, POINT TO THE NEXT WORD AND COMPARE. 
@@ -126,13 +127,17 @@ do_this
 	LDR	R1, R0, #0
 	BRz	incre_start
 	BR	begin
-incre_start
+incre_start	
+	LD	R5, LENGTH
+	ADD	R5, R5, #1
 	LD	R0, START_ORIG_0
 	ADD	R0, R0, R5
 	ST	R0, START_ORIG_0
+	LDR	R1, R0, #0
+	BRz	finish
 	ADD	R0, R0, R5
 	ST	R0, END_ORIG_0
-	LDR	R0, R0, #0
+	LDR	R1, R0, #0
 	BRz	finish
 	BR	sort_init
 finish	LD	R7, SAVER7
@@ -160,6 +165,7 @@ compare_beg
 	ST	R1, BEG_CHAR
 	LD	R0, START_END
 	LDR	R2, R0, #0
+	BRz	increase_start
 	JSR	COMP
 	ADD	R3, R1, R2 
 	BRz	goto_nextchar_init	;if two beginning match, compare next char
@@ -223,9 +229,13 @@ goto_nextword
 	BRz  	compare_beg
 	BRp	increase_start	
 increase_start
+	LD	R5, LENGTH
+	ADD	R5, R5, #1
 	LD	R0, START_ORIG_1
 	ADD	R0, R0, R5
 	ST	R0, START_ORIG_1
+	LDR	R1, R0, #0
+	BRz	finish_sort_from_sec
 	ADD	R0, R0, R5
 	ST	R0, END_ORIG_1
 	LDR	R1, R0, #0
@@ -235,8 +245,8 @@ finish_sort_from_sec
 	LD	R7, SAVER7
 	RET
 
-START_SORT		.FILL	X4033
-START_SORT_NEXT_CHAR	.FILL	X4033
+START_SORT		.FILL	X4000
+START_SORT_NEXT_CHAR	.FILL	X4000
 START_END		.FILL	X4033
 START_END_NEXT_CHAR	.FILL	X4033
 
