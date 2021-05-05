@@ -257,7 +257,7 @@ SAVER7		.BLKW	1
 
 RM_REDUN
 	ST	R7, SAVER7
-	LD	R0, START_RM
+rm_init	LD	R0, START_RM
 load_0	LDR	R1, R0, #0
 	LD	R2, zero
 	ADD	R2, R1, R2
@@ -314,7 +314,22 @@ shift	LDR	R1, R0, #0
 	ADD	R0, R0, #1	
 	ST	R0, END_RM
 	BR	shift_init
-done_rm	LD	R7, SAVER7
+done_rm	
+	LD	R5, LENGTH
+	ADD	R5, R5, #1
+	LD	R0, START_RM
+	ADD	R0, R0, R5
+	ST	R0, START_RM
+	LDR	R1, R0, #0
+	BRz	finish_rm
+	LD	R0, END_RM
+	NOT	R5, R5
+	ADD	R5, R5, #-1
+	ADD	R0, R0, R5
+	ST	R0, END_RM
+	BR	rm_init
+finish_rm
+	LD	R7, SAVER7
 	RET
 
 START_RM	.FILL	X4000
