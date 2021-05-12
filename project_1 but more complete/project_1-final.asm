@@ -70,7 +70,7 @@ LOOP	GETC
 	BRz	NEW_S
 	BR	LOOP
 SORT_LIST
-	JSR	RM_REDUN
+	JSR	RM_REDUN	;REMOVE REDUNDANT CHARACTERS
 	LEA	R0, OPT_choose	
 	PUTS
 	LEA 	R0, OPT_1
@@ -89,34 +89,17 @@ SORT_LIST
 	BR	#-8
 	;SORT THE LIST BY THE BEGINNING CHARACTER FOR EASE OF SORTING IN THE LONG RUN
 ZtoA	OUT
+	JSR	check_for_only_null
 	JSR	SORT_BY_ZA
 	;SORT THE LIST FROM THE SECOND CHARACTER
 	JSR	SORT_FROM_SEC_ZA
-	BR	#3
+	BR	PR_STRING
 AtoZ	OUT
+	JSR	check_for_only_null
 	JSR	SORT_BY_AZ
 	JSR	SORT_FROM_SEC_AZ
 	;PRINT THE SORTED LIST
-	JSR	PR_STRING
-;ASK USER IF WANT TO CONTINUE THE PROGRAM
-PRINT	LEA	R0, CONTINUE
-	PUTS
-	LEA	R0, CONTINUE_INP
-	PUTS
-	GETC
-	OUT
-	LD	R2, ONE
-	ADD	R2, R0, R2
-	BRz	NEW_BEG
-	LD	R2, ZERO
-	ADD	R2, R0, R2
-	BRz	FINISH_PROGRAM
-	BR	#-11
-FINISH_PROGRAM
-	HALT
-
 PR_STRING
-	ST	R7, SAVER7_0
 	LEA	R0, OUTP	
 	PUTS
 	LD	R5, LENGTHS
@@ -131,9 +114,25 @@ print_next
 	ADD	R0, R0, R5
 	ST	R0, START_NEW
 	LDI	R2, START_NEW
-	BRz	DONE
+	BRz	PRINT
 	BRp	print_next
-DONE	LD	R7, SAVER7_0
+;ASK USER IF WANT TO CONTINUE THE PROGRAM
+PRINT	LEA	R0, CONTINUE
+	PUTS
+	LEA	R0, OPTION
+	PUTS
+	GETC
+	OUT
+	LD	R2, ONE
+	ADD	R2, R0, R2	
+	BRz	NEW_BEG		;if pressed 1, to back to the beginning 
+	LD	R2, ZERO
+	ADD	R2, R0, R2
+	BRz	FINISH_PROGRAM	;if pressed 0, exit the program
+	BR	#-11		;if pressed neither 1 nor 0, make user re-enter input
+FINISH_PROGRAM
+	HALT
+
 	RET
 
 SAVER7_0	.BLKW	1
@@ -151,17 +150,36 @@ START_NEW	.FILL	X4000
 NUMOFSTRINGS	.BLKW	1
 KBINPUT		.STRINGZ "\nENTER NUMBER OF STRINGS: "
 PROMPT		.STRINGZ "\nENTER A STRING, THEN PRESS ENTER: "
-OPT_choose	.STRINGZ "\nCHOOSE AN OPTION: "
+OPT_choose	.STRINGZ "\n\nCHOOSE AN OPTION: "
 OPT_1		.STRINGZ "\n1 - ASCENDING ORDER"
 OPT_2		.STRINGZ "\n2 - DESCENDING ORDER"
 OPTION		.STRINGZ "\nYOUR OPTION? "
 OUTP		.STRINGZ "\nSORTED ORDER: "
-CONTINUE	.STRINGZ "\nPRESS 1 TO CONTINUE, OR 0 TO EXIT."
-CONTINUE_INP	.STRINGZ "\nCONTINUE? (1 - 0): "
+CONTINUE	.STRINGZ "\n\nPRESS 1 TO CONTINUE, OR 0 TO EXIT."
 newline		.STRINGZ "\n"
 
 START_0		.FILL	X4000
 END_0 		.FILL	X4033
+
+SAVER7_CHECK	.BLKW	1
+
+check_for_only_null
+	ST	R7, SAVER7_0
+	LD	R4, NUMOFSTRINGS
+	LD	R5, LENGTHS
+	ADD	R5, R5, #1
+	LD	R0, START_SORT	;LOAD THE ADDRESS OF THE FIRST CHARACTER IN THE FIRST STRING
+	LDR	R1, R0, #0	;LOAD THE FIRST CHARACTER IN THE FIRST STRING
+	BRnp	okay
+	ADD	R0, R0, R5
+	ADD	R4, R4, #-1
+	BRz	print_empty
+	BR	#-6
+print_empty
+	JSR	PR_STRING
+okay	LD	R7, SAVER7_0
+	RET
+
 ;sort from a - z
 SORT_BY_AZ
 	ST	R7, SAVER7
@@ -176,6 +194,8 @@ sort_init
 	ST	R0, START_END
 begin	LD	R0, START_SORT	;LOAD THE ADDRESS OF THE FIRST CHARACTER IN THE FIRST STRING
 	LDR	R1, R0, #0	;LOAD THE FIRST CHARACTER IN THE FIRST STRING
+	BRz	swap_word_init
+
 	BRz	swap_word_init
 	LD	R0, START_END
 	LDR	R2, R0, #0
@@ -193,7 +213,7 @@ swap_word_init
 	LD	R0, START_END
 	ST	R0, SWAP_END
 	LD	R7, SAVER7
-swap_word_0
+swap_word_0	
 	LD	R0, SWAP_START
 	LDR	R1, R0, #0
 	LD	R0, SWAP_END
@@ -220,7 +240,7 @@ do_this
 	LDR	R1, R0, #0
 	BRz	incre_start
 	BR	begin
-incre_start	
+incre_start			;move start pointer after one complete iteration
 	LD	R5, LENGTH
 	ADD	R5, R5, #1
 	LD	R0, START_ORIG_0
@@ -328,11 +348,7 @@ SORT_FROM_SEC_AZ
 	ST	R0, START_ORIG_1
 	LD	R0, END_CONST
 	ST	R0, END_ORIG_1
-compare_beg_init
-	LD	R0, START_ORIG_1
-	ST	R0, START_SORT
-	LD	R0, END_ORIG_1
-	ST	R0, START_END
+	JSR	compare_beg_init
 compare_beg
 	LD	R0, START_SORT
 	LDR	R1, R0, #0
@@ -344,11 +360,7 @@ compare_beg
 	ADD	R3, R1, R2 
 	BRz	goto_nextchar_init	;if two beginning match, compare next char
 	BRn	increase_start
-goto_nextchar_init
-	LD	R0, START_SORT
-	ST	R0, START_SORT_NEXT_CHAR
-	LD	R0, START_END
-	ST	R0, START_END_NEXT_CHAR
+	JSR	goto_nextchar_init
 goto_nextchar
 	LD	R0, START_SORT_NEXT_CHAR
 	ADD	R0, R0, #1
@@ -368,16 +380,7 @@ goto_nextchar
 	ST	R0, SWAP_START
 	LD	R0, START_END
 	ST	R0, SWAP_END
-	LD	R7, SAVER7
-swap_word
-	LD	R0, SWAP_START
-	LDR	R1, R0, #0
-	LD	R0, SWAP_END
-	LDR	R2, R0, #0
-	;SWAP PLACES
-	STR	R1, R0, #0
-	LD	R0, SWAP_START
-	STR	R2, R0, #0
+	JSR	swap_word		;proceed to swap words
 	;INCREASE SWAP ADDRESS
 	LD	R0, SWAP_START
 	ADD	R0, R0, #1
@@ -432,11 +435,7 @@ SORT_FROM_SEC_ZA
 	ST	R0, START_ORIG_1
 	LD	R0, END_CONST
 	ST	R0, END_ORIG_1
-compare_beg_init_1
-	LD	R0, START_ORIG_1
-	ST	R0, START_SORT
-	LD	R0, END_ORIG_1
-	ST	R0, START_END
+	JSR	compare_beg_init
 compare_beg_1
 	LD	R0, START_SORT
 	LDR	R1, R0, #0
@@ -446,13 +445,9 @@ compare_beg_1
 	BRz	increase_start_1
 	JSR	COMP
 	ADD	R3, R1, R2 
-	BRz	goto_nextchar_init_1	;if two beginning match, compare next char
+	BRz	goto_nextchar_init	;if two beginning match, compare next char
 	BRp	increase_start_1
-goto_nextchar_init_1
-	LD	R0, START_SORT
-	ST	R0, START_SORT_NEXT_CHAR
-	LD	R0, START_END
-	ST	R0, START_END_NEXT_CHAR
+	JSR	goto_nextchar_init	
 goto_nextchar_1
 	LD	R0, START_SORT_NEXT_CHAR
 	ADD	R0, R0, #1
@@ -473,16 +468,7 @@ goto_nextchar_1
 	ST	R0, SWAP_START
 	LD	R0, START_END
 	ST	R0, SWAP_END
-	LD	R7, SAVER7
-swap_sec_1
-	LD	R0, SWAP_START
-	LDR	R1, R0, #0
-	LD	R0, SWAP_END
-	LDR	R2, R0, #0
-	;SWAP PLACES
-	STR	R1, R0, #0
-	LD	R0, SWAP_START
-	STR	R2, R0, #0
+	JSR	swap_word
 	
 	;INCREASE SWAP ADDRESS
 	LD	R0, SWAP_START
@@ -492,8 +478,8 @@ swap_sec_1
 	ADD	R0, R0, #1
 	ST	R0, SWAP_END
 	ADD	R5, R5, #-1
-	BRzp	swap_sec_1
-	BR	compare_beg_init_1
+	BRzp	swap_word
+	BR	compare_beg_init
 goto_nextword_1
 	LD	R5, LENGTH
 	ADD	R5, R5, #1
@@ -518,12 +504,39 @@ increase_start_1
 	ST	R0, END_ORIG_1
 	LDR	R1, R0, #0
 	BRz	finish_sort_from_sec_1	;IF REACHED NULL STRING, FINISH SORTING
-	BR	compare_beg_init_1
+	BR	compare_beg_init
 finish_sort_from_sec_1
 	LD	R7, SAVER7
 	RET
 
 BEG_CHAR	.BLKW	1
+
+;initialize pointers before comparing
+compare_beg_init
+	LD	R0, START_ORIG_1
+	ST	R0, START_SORT
+	LD	R0, END_ORIG_1
+	ST	R0, START_END
+	RET
+
+;compare next char
+goto_nextchar_init
+	LD	R0, START_SORT
+	ST	R0, START_SORT_NEXT_CHAR
+	LD	R0, START_END
+	ST	R0, START_END_NEXT_CHAR
+	RET
+
+swap_word
+	LD	R0, SWAP_START
+	LDR	R1, R0, #0
+	LD	R0, SWAP_END
+	LDR	R2, R0, #0
+	;SWAP PLACES
+	STR	R1, R0, #0
+	LD	R0, SWAP_START
+	STR	R2, R0, #0
+	RET
 
 RM_REDUN
 	ST	R7, SAVER7
