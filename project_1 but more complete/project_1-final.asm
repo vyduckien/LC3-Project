@@ -13,7 +13,7 @@
 	.ORIG	x3000
 	LEA	R0, WELCOME
 	PUTS
-	WELCOME		.STRINGZ "                  --------WELCOME TO THE LC-3 PROJECT--------"
+	WELCOME		.STRINGZ "\n                  --------WELCOME TO THE LC-3 PROJECT--------"
 	LEA	R0, OPTION_0
 	PUTS
 	OPTION_0	.STRINGZ "\n\nPRESS ENTER TO PROCEED, OR PRESS ESC TO EXIT."
@@ -25,7 +25,6 @@
 	ADD	R2, R0, R2
 	BRz	FINISH_PROGRAM
 	BR	#-8
-
 NEW_BEG	
 	;CLEAR STRING FOR NEXT INPUT
 	JSR	CLR_STRING
@@ -90,13 +89,11 @@ SORT_LIST
 	;SORT THE LIST BY THE BEGINNING CHARACTER FOR EASE OF SORTING IN THE LONG RUN
 ZtoA	OUT
 	JSR	check_for_only_null
-	JSR	SORT_BY_ZA
 	;SORT THE LIST FROM THE SECOND CHARACTER
 	JSR	SORT_FROM_SEC_ZA
 	BR	PR_STRING
 AtoZ	OUT
 	JSR	check_for_only_null
-	JSR	SORT_BY_AZ
 	JSR	SORT_FROM_SEC_AZ
 	;PRINT THE SORTED LIST
 PR_STRING
@@ -161,8 +158,6 @@ newline		.STRINGZ "\n"
 START_0		.FILL	X4000
 END_0 		.FILL	X4033
 
-SAVER7_CHECK	.BLKW	1
-
 check_for_only_null
 	ST	R7, SAVER7_0
 	LD	R4, NUMOFSTRINGS
@@ -180,167 +175,13 @@ print_empty
 okay	LD	R7, SAVER7_0
 	RET
 
-;sort from a - z
-SORT_BY_AZ
-	ST	R7, SAVER7
-	LD	R0, START_0
-	ST	R0, START_ORIG_0
-	LD	R0, END_0 	
-	ST	R0, END_ORIG_0
-sort_init
-	LD	R0, START_ORIG_0
-	ST	R0, START_SORT
-	LD	R0, END_ORIG_0
-	ST	R0, START_END
-begin	LD	R0, START_SORT	;LOAD THE ADDRESS OF THE FIRST CHARACTER IN THE FIRST STRING
-	LDR	R1, R0, #0	;LOAD THE FIRST CHARACTER IN THE FIRST STRING
-	BRz	swap_word_init
-
-	BRz	swap_word_init
-	LD	R0, START_END
-	LDR	R2, R0, #0
-	BRz	do_this	
-	BRz	incre_start
-	JSR	COMP		;NEGATE R2 FOR COMPARISON
-	ADD	R3, R1, R2
-	BRnz	do_this		;IF ALREADY SORTED, POINT TO THE NEXT WORD AND COMPARE. 
-				;IF IN THE WRONG ORDER, PROCEED TO SORT
-	;init before swapping
-swap_word_init
-	LD	R5, LENGTH
-	LD	R0, START_SORT
-	ST	R0, SWAP_START
-	LD	R0, START_END
-	ST	R0, SWAP_END
-	LD	R7, SAVER7
-swap_word_0	
-	LD	R0, SWAP_START
-	LDR	R1, R0, #0
-	LD	R0, SWAP_END
-	LDR	R2, R0, #0
-	;SWAP PLACES
-	STR	R1, R0, #0
-	LD	R0, SWAP_START
-	STR	R2, R0, #0
-	LD	R0, SWAP_START
-	ADD	R0, R0, #1
-	ST	R0, SWAP_START
-	LD	R0, SWAP_END
-	ADD	R0, R0, #1
-	ST	R0, SWAP_END
-	ADD	R5, R5, #-1
-	BRzp	swap_word_0
-	BR	sort_init
-do_this
-	LD	R5, LENGTH
-	ADD	R5, R5, #1	;LENGTH DOES NOT INCLUDE NULL TERMINATOR, THUS PLUS 1 TO R5
-	LD	R0, START_END
-	ADD	R0, R0, R5
-	ST	R0, START_END
-	LDR	R1, R0, #0
-	BRz	incre_start
-	BR	begin
-incre_start			;move start pointer after one complete iteration
-	LD	R5, LENGTH
-	ADD	R5, R5, #1
-	LD	R0, START_ORIG_0
-	ADD	R0, R0, R5
-	ST	R0, START_ORIG_0
-	LDR	R1, R0, #0
-	;BRz	finish
-	ADD	R0, R0, R5
-	ST	R0, END_ORIG_0
-	LDR	R1, R0, #0
-	BRz	finish
-	BR	sort_init
-finish	LD	R7, SAVER7
-	RET
-
-;sort from z - a
-SORT_BY_ZA	
-	ST	R7, SAVER7
-	LD	R0, START_0	
-	ST	R0, START_ORIG_0
-	LD	R0, END_0   
-	ST	R0, END_ORIG_0
-sort_init_1
-	LD	R0, START_ORIG_0
-	ST	R0, START_SORT
-	LD	R0, END_ORIG_0
-	ST	R0, START_END
-begin_1	LD	R0, START_SORT	;LOAD THE ADDRESS OF THE FIRST CHARACTER IN THE FIRST STRING
-	LDR	R1, R0, #0	;LOAD THE FIRST CHARACTER IN THE FIRST STRING
-	BRz	swap_word_init_1
-	LD	R0, START_END
-	LDR	R2, R0, #0
-	BRz	do_this_1
-	BRz	incre_start_1
-	JSR	COMP		;NEGATE R2 FOR COMPARISON
-	ADD	R3, R1, R2
-	BRzp	do_this_1	;IF ALREADY SORTED, POINT TO THE NEXT WORD AND COMPARE. 
-				;IF IN THE WRONG ORDER, PROCEED TO SORT
-	;init before swapping
-swap_word_init_1
-	LD	R5, LENGTH
-	LD	R0, START_SORT
-	ST	R0, SWAP_START
-	LD	R0, START_END
-	ST	R0, SWAP_END
-	LD	R7, SAVER7
-swap_word_1
-	LD	R0, SWAP_START
-	LDR	R1, R0, #0
-	LD	R0, SWAP_END
-	LDR	R2, R0, #0
-	;SWAP PLACES
-	STR	R1, R0, #0
-	LD	R0, SWAP_START
-	STR	R2, R0, #0
-	LD	R0, SWAP_START
-	ADD	R0, R0, #1
-	ST	R0, SWAP_START
-	LD	R0, SWAP_END
-	ADD	R0, R0, #1
-	ST	R0, SWAP_END
-	ADD	R5, R5, #-1
-	BRzp	swap_word_1
-	BR	sort_init_1
-do_this_1
-	LD	R5, LENGTH
-	ADD	R5, R5, #1	;LENGTH DOES NOT INCLUDE NULL TERMINATOR, THUS PLUS 1 TO R5
-	LD	R0, START_END
-	ADD	R0, R0, R5
-	ST	R0, START_END
-	LDR	R1, R0, #0
-	BRz	incre_start_1
-	BR	begin_1
-incre_start_1	
-	LD	R5, LENGTH
-	ADD	R5, R5, #1
-	LD	R0, START_ORIG_0
-	ADD	R0, R0, R5
-	ST	R0, START_ORIG_0
-	LDR	R1, R0, #0
-	;BRz	finish_1
-	ADD	R0, R0, R5
-	ST	R0, END_ORIG_0
-	LDR	R1, R0, #0
-	BRz	finish
-	BR	sort_init_1
-finish_1
-	LD	R7, SAVER7
-	RET
-
 COMP	NOT	R2, R2
 	ADD	R2, R2, #1
 	RET
 
-START_ORIG_0	.FILL	X4000
 START_ORIG_1	.FILL	X4000
-END_ORIG_0	.FILL	X4033
 END_ORIG_1	.FILL	X4033
 LENGTH		.FILL	#50
-SAVER7		.BLKW	1
 
 SORT_FROM_SEC_AZ
 	ST	R7, SAVER7
@@ -348,7 +189,11 @@ SORT_FROM_SEC_AZ
 	ST	R0, START_ORIG_1
 	LD	R0, END_CONST
 	ST	R0, END_ORIG_1
-	JSR	compare_beg_init
+compare_beg_init
+	LD	R0, START_ORIG_1
+	ST	R0, START_SORT
+	LD	R0, END_ORIG_1
+	ST	R0, START_END
 compare_beg
 	LD	R0, START_SORT
 	LDR	R1, R0, #0
@@ -358,9 +203,14 @@ compare_beg
 	BRz	increase_start
 	JSR	COMP
 	ADD	R3, R1, R2 
+	BRp	init_swap
 	BRz	goto_nextchar_init	;if two beginning match, compare next char
-	BRn	increase_start
-	JSR	goto_nextchar_init
+	BRn	do_this_0		;if sorted, move 2nd word pointer down
+goto_nextchar_init
+	LD	R0, START_SORT
+	ST	R0, START_SORT_NEXT_CHAR
+	LD	R0, START_END
+	ST	R0, START_END_NEXT_CHAR
 goto_nextchar
 	LD	R0, START_SORT_NEXT_CHAR
 	ADD	R0, R0, #1
@@ -370,18 +220,28 @@ goto_nextchar
 	ADD	R0, R0, #1
 	ST	R0, START_END_NEXT_CHAR
 	LDR	R2, R0, #0
+	BRz	goto_nextword
 	JSR	COMP
 	ADD	R3, R1, R2
 	BRz	goto_nextchar		;if two words have the same beginning character, proceed to compare the next characters
 	BRn	goto_nextword		;if already sorted, compare next word
 ;INIT BEFORE SWAPPING
+init_swap
 	LD	R5, LENGTH
 	LD	R0, START_SORT
 	ST	R0, SWAP_START
 	LD	R0, START_END
 	ST	R0, SWAP_END
-	JSR	swap_word		;proceed to swap words
-	;INCREASE SWAP ADDRESS
+swap_word
+	LD	R0, SWAP_START
+	LDR	R1, R0, #0
+	LD	R0, SWAP_END
+	LDR	R2, R0, #0
+	;SWAP PLACES
+	STR	R1, R0, #0
+	LD	R0, SWAP_START
+	STR	R2, R0, #0
+ 	;INCREASE SWAP ADDRESS
 	LD	R0, SWAP_START
 	ADD	R0, R0, #1
 	ST	R0, SWAP_START
@@ -402,7 +262,16 @@ goto_nextword
 	JSR	COMP
 	ADD	R3, R1, R2
 	BRz  	compare_beg
-	BRp	increase_start	
+	BRp	increase_start
+do_this_0
+	LD	R5, LENGTH
+	ADD	R5, R5, #1	;LENGTH DOES NOT INCLUDE NULL TERMINATOR, THUS PLUS 1 TO R5
+	LD	R0, START_END
+	ADD	R0, R0, R5
+	ST	R0, START_END
+	LDR	R1, R0, #0
+	BRz	increase_start
+	BR	compare_beg	
 increase_start
 	LD	R5, LENGTH
 	ADD	R5, R5, #1
@@ -420,6 +289,7 @@ finish_sort_from_sec
 	LD	R7, SAVER7
 	RET
 
+SAVER7			.BLKW	1
 START_SORT		.FILL	X4000
 START_SORT_NEXT_CHAR	.FILL	X4000
 START_END		.FILL	X4033
@@ -435,7 +305,11 @@ SORT_FROM_SEC_ZA
 	ST	R0, START_ORIG_1
 	LD	R0, END_CONST
 	ST	R0, END_ORIG_1
-	JSR	compare_beg_init
+compare_beg_init_1
+	LD	R0, START_ORIG_1
+	ST	R0, START_SORT
+	LD	R0, END_ORIG_1
+	ST	R0, START_END
 compare_beg_1
 	LD	R0, START_SORT
 	LDR	R1, R0, #0
@@ -445,9 +319,14 @@ compare_beg_1
 	BRz	increase_start_1
 	JSR	COMP
 	ADD	R3, R1, R2 
-	BRz	goto_nextchar_init	;if two beginning match, compare next char
-	BRp	increase_start_1
-	JSR	goto_nextchar_init	
+	BRn	init_swap_1
+	BRz	goto_nextchar_init_1	;if two beginning match, compare next char
+	BRp	do_this_1
+goto_nextchar_init_1
+	LD	R0, START_SORT
+	ST	R0, START_SORT_NEXT_CHAR
+	LD	R0, START_END
+	ST	R0, START_END_NEXT_CHAR
 goto_nextchar_1
 	LD	R0, START_SORT_NEXT_CHAR
 	ADD	R0, R0, #1
@@ -463,13 +342,21 @@ goto_nextchar_1
 	BRz	goto_nextchar_1	;if two words have the same beginning character, proceed to compare the next characters
 	BRp	goto_nextword_1	;if already sorted, compare next word
 ;INIT BEFORE SWAPPING
+init_swap_1
 	LD	R5, LENGTH
 	LD	R0, START_SORT
 	ST	R0, SWAP_START
 	LD	R0, START_END
 	ST	R0, SWAP_END
-	JSR	swap_word
-	
+swap_word_e
+	LD	R0, SWAP_START
+	LDR	R1, R0, #0
+	LD	R0, SWAP_END
+	LDR	R2, R0, #0
+	;SWAP PLACES
+	STR	R1, R0, #0
+	LD	R0, SWAP_START
+	STR	R2, R0, #0
 	;INCREASE SWAP ADDRESS
 	LD	R0, SWAP_START
 	ADD	R0, R0, #1
@@ -478,8 +365,8 @@ goto_nextchar_1
 	ADD	R0, R0, #1
 	ST	R0, SWAP_END
 	ADD	R5, R5, #-1
-	BRzp	swap_word
-	BR	compare_beg_init
+	BRzp	swap_word_e
+	BR	compare_beg_init_1
 goto_nextword_1
 	LD	R5, LENGTH
 	ADD	R5, R5, #1
@@ -491,7 +378,16 @@ goto_nextword_1
 	JSR	COMP
 	ADD	R3, R1, R2
 	BRz  	compare_beg_1
-	BRn	increase_start_1	
+	BRn	increase_start_1
+do_this_1
+	LD	R5, LENGTH
+	ADD	R5, R5, #1	;LENGTH DOES NOT INCLUDE NULL TERMINATOR, THUS PLUS 1 TO R5
+	LD	R0, START_END
+	ADD	R0, R0, R5
+	ST	R0, START_END
+	LDR	R1, R0, #0
+	BRz	increase_start_1
+	BR	compare_beg_1	
 increase_start_1
 	LD	R5, LENGTH
 	ADD	R5, R5, #1
@@ -504,43 +400,16 @@ increase_start_1
 	ST	R0, END_ORIG_1
 	LDR	R1, R0, #0
 	BRz	finish_sort_from_sec_1	;IF REACHED NULL STRING, FINISH SORTING
-	BR	compare_beg_init
+	BR	compare_beg_init_1
 finish_sort_from_sec_1
 	LD	R7, SAVER7
 	RET
 
 BEG_CHAR	.BLKW	1
 
-;initialize pointers before comparing
-compare_beg_init
-	LD	R0, START_ORIG_1
-	ST	R0, START_SORT
-	LD	R0, END_ORIG_1
-	ST	R0, START_END
-	RET
-
-;compare next char
-goto_nextchar_init
-	LD	R0, START_SORT
-	ST	R0, START_SORT_NEXT_CHAR
-	LD	R0, START_END
-	ST	R0, START_END_NEXT_CHAR
-	RET
-
-swap_word
-	LD	R0, SWAP_START
-	LDR	R1, R0, #0
-	LD	R0, SWAP_END
-	LDR	R2, R0, #0
-	;SWAP PLACES
-	STR	R1, R0, #0
-	LD	R0, SWAP_START
-	STR	R2, R0, #0
-	RET
-
 RM_REDUN
 	ST	R7, SAVER7
-	LD	R0, START_RM_CONST
+	LD	R0, START_CONST
 	ST	R0, START_RM
 	LD	R0, END_RM_CONST
 	ST	R0, END_RM
@@ -631,7 +500,6 @@ CLR	LDR	R1, R0, #0
 
 START_CLR	.FILL	X4000
 END_ClR		.FILL	X-7DFF
-START_RM_CONST	.FILL	X4000
 START_RM	.FILL	X4000
 END_RM_CONST	.FILL	X-4031
 END_RM		.FILL	X-4031
